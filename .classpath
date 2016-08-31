@@ -4,8 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/jsoup-1.9.2.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/cssparser-0.9.19.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/htmlunit-2.22.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/htmlunit-core-js-2.22.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/jetty-io-9.2.17.v20160517.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/jetty-util-9.2.17.v20160517.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Minhyung Joo/workspace/Bid Data Extractor/neko-htmlunit-2.21.jar"/>
