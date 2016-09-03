@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.cert.Certificate;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,6 +27,7 @@ public class KorailParser extends Parser {
 	
 	final static String BASE_PATH = "http://ebid.korail.com/bid/forward.jsp";
 	final static String PROD_ANN_LIST = "http://ebid.korail.com/bid/bidNoticeListA31.jsp";
+	final static String FACIL_ANN_LIST = "http://ebid.korail.com/bid/bidNoticeListA41.jsp";
 	final static String SERV_ANN_LIST = "http://ebid.korail.com/bid/bidNoticeListA51.jsp";
 	final static String RES_LIST = "http://ebid.korail.com/bid/openBidList.jsp?";
 	
@@ -54,7 +54,7 @@ public class KorailParser extends Parser {
 		}
 	}
 	
-	public static void main(String args[]) throws IOException {
+	public static void main(String args[]) throws IOException, SQLException {
 		KorailParser tester = new KorailParser("2016-08-01", "2016-08-23", "물품공고");
 		
 		tester.getList();
@@ -120,63 +120,48 @@ public class KorailParser extends Parser {
 		driver = new HtmlUnitDriver();
 	}
 	
-	public void getList() throws IOException {
+	public void getList() throws IOException, SQLException {
 		initialize();
 		String path = "";
 		
 		String param = "";
 		Document doc = null;
-		if (op.equals("물품공고")) {
-			path = KorailParser.PROD_ANN_LIST;
+		if (it.equals("공고")) {
+			if (wt.equals("물품")) {
+				path = KorailParser.PROD_ANN_LIST;
+				param += "menu_code=A.3.1";
+			}
+			else if (wt.equals("용역")) {
+				path = KorailParser.SERV_ANN_LIST;
+				param += "menu_code=A.5.1";
+			}
+			else if (wt.equals("공사")) {
+				path = KorailParser.FACIL_ANN_LIST;
+				param += "menu_code=A.4.1";
+			}
 			
-			param += "notice_date1=" + sd;
+			param += "&notice_date1=" + sd;
 			param += "&notice_date2=" + ed;
 			param += "&order_by=BIDXDATE";
 			param += "&asc=false";
-			param += "&menu_code=A.3.1";
 			param += "&page_number=1";
 			
 			openConnection(path, "POST");
 			doc = Jsoup.parse(getResponse(param, "POST"));
 		}
-		else if (op.equals("용역공고")) {
-			path = KorailParser.SERV_ANN_LIST;
-			
-			param += "notice_date1=" + sd;
-			param += "&notice_date2=" + ed;
-			param += "&order_by=BIDXDATE";
-			param += "&asc=false";
-			param += "&menu_code=A.5.1";
-			param += "&page_number=1";
-			
-			openConnection(path, "POST");
-			doc = Jsoup.parse(getResponse(param, "POST"));
-		}
-		else if (op.equals("물품결과")) {
+		else if (it.equals("결과")) {
 			path = KorailParser.RES_LIST;
 			
-			path += "notice_date1=" + sd;
+			if (wt.equals("물품")) path += "menu_code=A.3.9"; 
+			else if (wt.equals("용역")) path += "menu_code=A.5.7";
+			else if (wt.equals("공사")) path += "menu_code=A.4.8";
+			
+			path += "&notice_date1=" + sd;
 			path += "&notice_date2=" + ed;
 			path += "&x=13";
 			path += "&y=13";
 			path += "&order_by=BIDXCODE";
 			path += "&asc=false";
-			path += "&menu_code=A.3.9";
-			path += "&page_number=1";
-			
-			openConnection(path, "GET");
-			doc = Jsoup.parse(getResponse(null, "GET"));
-		}
-		else if (op.equals("용역결과")) {
-			path = KorailParser.RES_LIST;
-			
-			path += "notice_date1=" + sd;
-			path += "&notice_date2=" + ed;
-			path += "&x=13";
-			path += "&y=13";
-			path += "&order_by=BIDXCODE";
-			path += "&asc=false";
-			path += "&menu_code=A.5.7";
 			path += "&page_number=1";
 			
 			openConnection(path, "GET");
@@ -195,28 +180,104 @@ public class KorailParser extends Parser {
 		driver.close();
 	}
 	
-	public void parseListRow(Element row) throws IOException {
+	public void parseListRow(Element row) throws IOException, SQLException {
 		Elements data = row.getElementsByTag("td");
-		if (op.equals("물품공고") || op.equals("용역공고")) {
-			String bidno = Jsoup.parse(data.get(0).html().split("<br>")[0]).text();
-			String bidType = Jsoup.parse(data.get(0).html().split("<br>")[1]).text();
-			String org = Jsoup.parse(data.get(1).html().split("<br>")[1]).text();
-			String annType = Jsoup.parse(data.get(2).html().split("<br>")[0]).text();
-			String selectMethod = Jsoup.parse(data.get(2).html().split("<br>")[1]).text();
-			String startDate = Jsoup.parse(data.get(3).html().split("<br>")[0]).text();
-			String endDate = Jsoup.parse(data.get(3).html().split("<br>")[1]).text();
-			String annDate = Jsoup.parse(data.get(4).html().split("<br>")[0]).text();
-			String prog = Jsoup.parse(data.get(4).html().split("<br>")[1]).text();
+		if (it.equals("공고")) {
+			String bidno = Jsoup.parse(data.get(0).html().split("<br>")[0]).text(); // 공고번호
+			String bidType = Jsoup.parse(data.get(0).html().split("<br>")[1]).text(); // 입찰방식
+			String org = Jsoup.parse(data.get(1).html().split("<br>")[1]).text(); // 발주부서
+			String annType = Jsoup.parse(data.get(2).html().split("<br>")[0]).text(); // 공고분류
+			//String selectMethod = Jsoup.parse(data.get(2).html().split("<br>")[1]).text(); // 낙찰자선정
+			String endDate = Jsoup.parse(data.get(3).html().split("<br>")[1]).text(); // 투찰종료일시
+			String prog = Jsoup.parse(data.get(4).html().split("<br>")[1]).text(); // 공고상태
 			
-			String link = data.get(0).getElementsByTag("a").first().attr("href");
-			getItem(link);
+			boolean enter = true;
+			boolean exists = false;
+			String where = "WHERE 공고번호=\"" + bidno + "\"";
+			
+			rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호 FROM korailbidinfo " + where + ")");
+			if (rs.next()) exists = rs.getBoolean(1);
+			
+			if (exists) {
+				String sql = "SELECT 공고, 공고상태 FROM korailbidinfo " + where;
+				rs = st.executeQuery(sql);
+				
+				int finished = 0;
+				String dbProg = "";
+				if (rs.first()) {
+					finished = rs.getInt(1);
+					dbProg = rs.getString(2);
+				}
+
+				if (finished > 0) {
+					if (dbProg.equals(prog)) enter = false;
+					else {
+						sql = "UPDATE korailbidinfo SET 공고상태=\"" + prog + "\" " + where;
+						st.executeUpdate(sql);
+					}
+				}
+				else if (!dbProg.equals(prog)) {
+					sql = "UPDATE korailbidinfo SET 공고상태=\"" + prog + "\" " + where;
+					st.executeUpdate(sql);
+				}
+			}
+			else {
+				// If entry doesn't exists in db, insert new row.
+				String sql = "INSERT INTO korailbidinfo (공고번호, 입찰방식, 발주부서, 공고분류, 투찰종료일시, 공고상태) VALUES (" +
+						"\""+bidno+"\", " +
+						"\""+bidType+"\", " +
+						"\""+org+"\", " +
+						"\""+annType+"\", " +
+						"\""+endDate+"\", " +
+						"\""+prog+"\");";
+				st.executeUpdate(sql);
+			}
+			
+			if (enter) {
+				String link = data.get(0).getElementsByTag("a").first().attr("href");
+				getItem(link);
+			}
 		}
-		else if (op.equals("물품결과") || op.equals("용역결과")) {
+		else if (it.equals("결과")) {
 			String bidno = data.get(0).text(); // 공고번호차수
-			String annType = data.get(2).text();
-			String org = data.get(3).text();
-			String openDate = data.get(4).text();
+			String annType = data.get(2).text(); // 공고분류
+			String org = data.get(3).text(); // 발주부서
+			String openDate = data.get(4).text(); // 개찰일시
 			
+			boolean enter = true;
+			boolean exists = false;
+			String where = "WHERE 공고번호=\"" + bidno + "\"";
+			
+			rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호 FROM korailbidinfo " + where + ")");
+			if (rs.next()) exists = rs.getBoolean(1);
+			
+			if (exists) {
+				String sql = "SELECT 완료 FROM korailbidinfo " + where;
+				rs = st.executeQuery(sql);
+				
+				int finished = 0;
+				if (rs.first()) {
+					finished = rs.getInt(1);
+				}
+
+				if (finished > 0) {
+					enter = false;
+				}
+			}
+			else {
+				// If entry doesn't exists in db, insert new row.
+				String sql = "INSERT INTO korailbidinfo (공고번호, 발주부서, 공고분류, 개찰일시) VALUES (" +
+						"\""+bidno+"\", " +
+						"\""+org+"\", " +
+						"\""+annType+"\", " +
+						"\""+openDate+"\");";
+				st.executeUpdate(sql);
+			}
+			
+			if (enter) {
+				String link = data.get(0).getElementsByTag("a").first().attr("href");
+				getItem(link);
+			}
 		}
 	}
 	
