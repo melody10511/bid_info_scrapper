@@ -204,21 +204,9 @@ public class DayCheckFrame extends JFrame {
 							int svcount = 0;
 							parser.setDate(sday, sday);
 							
-							rs = st.executeQuery("SELECT COUNT(*) FROM naraprodinfo WHERE 예정개찰일시 BETWEEN \""+sday+" 00:00:00\" AND \""+sday+" 23:59:59\" AND 목록=1;");
+							rs = st.executeQuery("SELECT COUNT(*) FROM narabidinfo WHERE 예정개찰일시 BETWEEN \""+sday+" 00:00:00\" AND \""+sday+" 23:59:59\" AND 목록=1;");
 							if (rs.next()) {
 								dbcount = rs.getInt(1);
-							}
-							rs = st.executeQuery("SELECT COUNT(*) FROM narafacilinfo WHERE 예정개찰일시 BETWEEN \""+sday+" 00:00:00\" AND \""+sday+" 23:59:59\" AND 목록=1;");
-							if (rs.next()) {
-								dbcount += rs.getInt(1);
-							}
-							rs = st.executeQuery("SELECT COUNT(*) FROM naraservinfo WHERE 예정개찰일시 BETWEEN \""+sday+" 00:00:00\" AND \""+sday+" 23:59:59\" AND 목록=1;");
-							if (rs.next()) {
-								dbcount += rs.getInt(1);
-							}
-							rs = st.executeQuery("SELECT COUNT(*) FROM nararestinfo WHERE 예정개찰일시 BETWEEN \""+sday+" 00:00:00\" AND \""+sday+" 23:59:59\" AND 목록=1;");
-							if (rs.next()) {
-								dbcount += rs.getInt(1);
 							}
 							
 							svcount = parser.getTotal();

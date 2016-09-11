@@ -204,12 +204,12 @@ public class LHParser extends Parser {
 				String dbProg = "";
 				if (rs.first()) {
 					finished = rs.getInt(1);
-					dbProg = rs.getString(2);
+					dbProg = rs.getString(2) == null ? "" : rs.getString(2);
 				}
 				if (finished > 0) {
 					if (dbProg.equals(prog)) enter = false;
 					else {
-						String sql = "UPDATE exbidinfo SET 공고현황=\"" + prog + "\" " + where;
+						String sql = "UPDATE lhbidinfo SET 공고현황=\"" + prog + "\" " + where;
 						st.executeUpdate(sql);
 					}
 				}
@@ -323,7 +323,7 @@ public class LHParser extends Parser {
 		driver.close();
 		} catch (Exception e) {
 			driver.close();
-			Logger.getGlobal().log(Level.WARNING, e.getMessage());
+			Logger.getGlobal().log(Level.WARNING, e.getMessage(), e);
 			e.printStackTrace();
 		}
 	}
@@ -394,12 +394,12 @@ public class LHParser extends Parser {
 				String dbResult = "";
 				if (rs.first()) {
 					finished = rs.getInt(1);
-					dbResult = rs.getString(2);
+					dbResult = rs.getString(2) == null ? "" : rs.getString(2);
 				}
 				if (finished > 0) {
 					if (dbResult.equals(avail))	enter = false;
 					else {
-						String sql = "UPDATE exbidinfo SET 개찰내역=\"" + avail + "\" " + where;
+						String sql = "UPDATE lhbidinfo SET 개찰내역=\"" + avail + "\" " + where;
 						st.executeUpdate(sql);
 					}
 				}
@@ -609,6 +609,7 @@ public class LHParser extends Parser {
 		driver.close();
 		} catch (Exception e) {
 			driver.close();
+			Logger.getGlobal().log(Level.WARNING, e.getMessage(), e);
 			e.printStackTrace();
 		}
 	}
@@ -631,6 +632,7 @@ public class LHParser extends Parser {
 			setOption("결과");
 			parseBidRes();
 		} catch (IOException | SQLException e) {
+			Logger.getGlobal().log(Level.WARNING, e.getMessage());
 			e.printStackTrace();
 		}
 	}

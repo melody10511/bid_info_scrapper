@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -73,7 +75,7 @@ public class DapaParser extends Parser {
 	}
 	
 	public static void main(String args[]) throws IOException, ClassNotFoundException, SQLException {
-		DapaParser tester = new DapaParser("2008/03/01", "2008/03/31", "입찰결과", null);
+		DapaParser tester = new DapaParser("2006/09/11", "2006/09/11", "입찰결과", null);
 		
 		tester.run();
 	}
@@ -755,13 +757,13 @@ public class DapaParser extends Parser {
 			for (int j = 0; j < infos.size(); j++) {
 				String key = infos.get(j).text();
 				if (key.equals("공고번호-차수")) {
-					String check = infos.get(j).nextElementSibling().text();
-					if (check.split(" ").length > 1) {
-						String value = infos.get(j).nextElementSibling().text().split(" ")[1];					
+					if (infos.get(j).nextElementSibling().text().length() <= 1) return null;
+					else {
+						String value = infos.get(j).nextElementSibling().text();
+						System.out.println(value);
 						negno = value.split("-")[0];
 						negoVer = value.split("-")[1];
 					}
-					else return null;
 				}
 				else if (key.equals("발주기관")) {
 					org = infos.get(j).nextElementSibling().text();
@@ -879,13 +881,12 @@ public class DapaParser extends Parser {
 				String key = infos.get(j).text();
 				String value = infos.get(j).nextElementSibling().text();
 				if (key.equals("공고번호-차수")) {
-					String check = infos.get(j).nextElementSibling().text();
-					if (check.split(" ").length > 1) {
-						value = infos.get(j).nextElementSibling().text().split(" ")[1];					
+					if (value.length() <= 1) return null;
+					else {
+						value = infos.get(j).nextElementSibling().text();					
 						negno = value.split("-")[0];
 						negoVer = value.split("-")[1];
 					}
-					else return null;
 				}
 				else if (key.equals("발주기관")) {
 	        		org = value;
@@ -1133,6 +1134,7 @@ public class DapaParser extends Parser {
 			setOption("협상결과");
 			getList();
 		} catch (IOException | SQLException e) {
+			Logger.getGlobal().log(Level.WARNING, e.getMessage());
 			e.printStackTrace();
 		}
 	}

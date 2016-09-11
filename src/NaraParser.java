@@ -67,7 +67,7 @@ public class NaraParser extends Parser {
 	}
 	
 	public static void main(String[] args) throws ClassNotFoundException, SQLException, IOException {
-		NaraParser tester = new NaraParser("2016/08/17", "2016/08/18", "공고");
+		NaraParser tester = new NaraParser("2016/08/30", "2016/08/30", "공고");
 		
 		tester.getList();
 		tester.setOption("결과");
@@ -182,25 +182,12 @@ public class NaraParser extends Parser {
 			String compType = data.get(6).text(); // 계약방법
 			
 			String where = "WHERE 공고번호차수=\"" + bidno + "\"";
-			String table = "";
-			if (workType.equals("물품")) {
-				table = "naraprodinfo";
-			}
-			else if (workType.equals("공사")) {
-				table = "narafacilinfo";
-			}
-			else if (workType.equals("용역")) {
-				table = "naraservinfo";
-			}
-			else {
-				table = "nararestinfo";
-			}
 			
-			rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM " + table + " " + where + ")");
+			rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM narabidinfo " + where + ")");
 			if (rs.first()) exists = rs.getBoolean(1);
 			
 			if (exists) {
-				String sql = "SELECT 공고 FROM " + table + " " + where;
+				String sql = "SELECT 공고 FROM narabidinfo " + where;
 				rs = st.executeQuery(sql);
 				
 				int finished = 0;
@@ -210,11 +197,11 @@ public class NaraParser extends Parser {
 
 				if (finished > 0) enter = false;
 				
-				sql = "UPDATE " + table + " SET 공고기관=\"" + annOrg + "\" " + where;
+				sql = "UPDATE narabidinfo SET 공고기관=\"" + annOrg + "\" " + where;
 				st.executeUpdate(sql);
 			}
 			else {
-				String sql = "INSERT INTO " + table + " (업무, 공고번호차수, 공고분류, 공고기관, 수요기관, 계약방법) VALUES (" +
+				String sql = "INSERT INTO narabidinfo (업무, 공고번호차수, 공고분류, 공고기관, 수요기관, 계약방법) VALUES (" +
 						"\"" + workType + "\", " +
 						"\"" + bidno + "\", " +
 						"\"" + bidType + "\", " +
@@ -228,7 +215,7 @@ public class NaraParser extends Parser {
 				String itemPath = data.get(3).getElementsByTag("a").first().attr("href");
 				openConnection(itemPath, "GET");
 				Document doc = Jsoup.parse(getResponse(null, "GET"));
-				parseInfo(doc, bidno, workType, table);
+				parseInfo(doc, bidno, workType);
 			}
 		}
 		else if (op.equals("결과")) {
@@ -245,26 +232,12 @@ public class NaraParser extends Parser {
 			
 			String where = "WHERE 공고번호차수 = \"" + bidno + "\" AND 재입찰번호=" + reno;
 			
-			String table = "";
-			if (workType.equals("물품")) {
-				table = "naraprodinfo";
-			}
-			else if (workType.equals("공사")) {
-				table = "narafacilinfo";
-			}
-			else if (workType.equals("용역")) {
-				table = "naraservinfo";
-			}
-			else {
-				table = "nararestinfo";
-			}
-			
 			if (!result.equals("상세조회")) {
-				rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM " + table + " " + where + ")");
+				rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM narabidinfo " + where + ")");
 				if (rs.first()) exists = rs.getBoolean(1);
 				
 				if (exists) {
-					String sql = "SELECT 완료, 진행상황, 목록 FROM " + table + " " + where;
+					String sql = "SELECT 완료, 진행상황, 목록 FROM narabidinfo " + where;
 					rs = st.executeQuery(sql);
 					
 					int finished = 0;
@@ -280,27 +253,27 @@ public class NaraParser extends Parser {
 						if (dbResult.equals(result)) enter = false;
 						else {
 							if (result.equals("유찰") || result.equals("재입찰")) enter = false;
-							sql = "UPDATE " + table + " SET 진행상황=\"" + result + "\" " + where;
+							sql = "UPDATE narabidinfo SET 진행상황=\"" + result + "\" " + where;
 							st.executeUpdate(sql);
 						}
 					}
 					else if (!dbResult.equals(result)) {
 						if (result.equals("유찰") || result.equals("재입찰")) {
 							enter = false;
-							sql = "UPDATE " + table + " SET 완료=1 " + where;
+							sql = "UPDATE narabidinfo SET 완료=1 " + where;
 							st.executeUpdate(sql);
 						}
-						sql = "UPDATE " + table + " SET 진행상황=\"" + result + "\" " + where;
+						sql = "UPDATE narabidinfo SET 진행상황=\"" + result + "\" " + where;
 						st.executeUpdate(sql);
 					}
 					
 					if (indexed == 0) {
-						sql = "UPDATE " + table + " SET 목록=1 " + where;
+						sql = "UPDATE narabidinfo SET 목록=1 " + where;
 						st.executeUpdate(sql);
 					}
 				}
 				else {
-					String sql = "INSERT INTO " + table + " (업무, 공고번호차수, 수요기관, 실제개찰일시, 예정개찰일시, 진행상황, 재입찰번호, 참여수, 투찰금액, 목록) VALUES (" +
+					String sql = "INSERT INTO narabidinfo (업무, 공고번호차수, 수요기관, 실제개찰일시, 예정개찰일시, 진행상황, 재입찰번호, 참여수, 투찰금액, 목록) VALUES (" +
 							"\"" + workType + "\", " +
 							"\"" + bidno + "\", " +
 							"\"" + demOrg + "\", " +
@@ -313,7 +286,7 @@ public class NaraParser extends Parser {
 					st.executeUpdate(sql);
 					if (result.equals("유찰") || result.equals("재입찰")) {
 						enter = false;
-						sql = "UPDATE " + table + " SET 완료=1 " + where;
+						sql = "UPDATE narabidinfo SET 완료=1 " + where;
 						st.executeUpdate(sql);
 					}
 				}
@@ -343,7 +316,7 @@ public class NaraParser extends Parser {
 					
 					openConnection(itempath, "GET");
 					Document resDoc = Jsoup.parse(getResponse(null, "GET"));
-					parseRes(resDoc, table, where, bidno, bidcate, reno, tid);
+					parseRes(resDoc, where, bidno, bidcate, reno, tid);
 				}
 			}
 			else {
@@ -377,11 +350,11 @@ public class NaraParser extends Parser {
 					boolean itemexists = false;
 					boolean itementer = true;
 						
-					rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM " + table + " " + where + ")");
+					rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM narabidinfo " + where + ")");
 					if (rs.first()) itemexists = rs.getBoolean(1);
 					
 					if (itemexists) {
-						String sql = "SELECT 완료, 진행상황 FROM " + table + " " + where;
+						String sql = "SELECT 완료, 진행상황 FROM narabidinfo " + where;
 						rs = st.executeQuery(sql);
 						
 						int finished = 0;
@@ -395,22 +368,22 @@ public class NaraParser extends Parser {
 							if (dbResult.equals(result)) itementer = false;
 							else {
 								if (result.equals("유찰") || result.equals("재입찰")) itementer = false;
-								sql = "UPDATE " + table + " SET 진행상황=\"" + result + "\" " + where;
+								sql = "UPDATE narabidinfo SET 진행상황=\"" + result + "\" " + where;
 								st.executeUpdate(sql);
 							}
 						}
 						else if (!dbResult.equals(result)){
 							if (result.equals("유찰") || result.equals("재입찰")) {
 								itementer = false;
-								sql = "UPDATE " + table + " SET 완료=1 " + where;
+								sql = "UPDATE narabidinfo SET 완료=1 " + where;
 								st.executeUpdate(sql);
 							}
-							sql = "UPDATE " + table + " SET 진행상황=\"" + result + "\" " + where;
+							sql = "UPDATE narabidinfo SET 진행상황=\"" + result + "\" " + where;
 							st.executeUpdate(sql);
 						}
 					}
 					else {
-						String sql = "INSERT INTO " + table + " (업무, 공고번호차수, 재입찰번호, 수요기관, 실제개찰일시, 예정개찰일시, 참여수, 투찰금액, 입찰분류, 진행상황) VALUES (" +
+						String sql = "INSERT INTO narabidinfo (업무, 공고번호차수, 재입찰번호, 수요기관, 실제개찰일시, 예정개찰일시, 참여수, 투찰금액, 입찰분류, 진행상황) VALUES (" +
 								"\"" + workType + "\", " +
 								"\"" + bidno + "\", " +
 								"" + reno + ", " +
@@ -425,13 +398,13 @@ public class NaraParser extends Parser {
 						System.out.println(sql);
 						if (result.equals("유찰") || result.equals("재입찰")) {
 							itementer = false;
-							sql = "UPDATE " + table + " SET 완료=1 " + where;
+							sql = "UPDATE narabidinfo SET 완료=1 " + where;
 							st.executeUpdate(sql);
 						}
 					}
 					
 					if (i == 0) {
-						String sql = "UPDATE " + table + " SET 목록=1 " + where; // ADDED 목록
+						String sql = "UPDATE narabidinfo SET 목록=1 " + where; // ADDED 목록
 						st.executeUpdate(sql);
 					}
 					
@@ -455,7 +428,7 @@ public class NaraParser extends Parser {
 						
 						openConnection(itempath, "GET");
 						Document resDoc = Jsoup.parse(getResponse(null, "GET"));
-						parseRes(resDoc, table, where, bidno, cateno, reno, tid);
+						parseRes(resDoc, where, bidno, cateno, reno, tid);
 					}
 				}
 				
@@ -463,7 +436,7 @@ public class NaraParser extends Parser {
 		}
 	}
 	
-	public void parseInfo(Document doc, String bidno, String workType, String table) throws SQLException, IOException {
+	public void parseInfo(Document doc, String bidno, String workType) throws SQLException, IOException {
 		if (op.equals("공고")) {
 			String where = "WHERE 공고번호차수=\"" + bidno + "\"";
 			
@@ -536,22 +509,25 @@ public class NaraParser extends Parser {
 				}
 				else if (baseTable.getElementsByTag("tr").size() > 2) {
 					Elements baserows = baseTable.getElementsByTag("tr");
-					Elements data = baserows.get(1).getElementsByTag("td");
-					String divnum = data.get(0).text();
-					String divprice = data.get(0).text();
-					divprice = divprice.replaceAll("[^\\d.]", "");
-
+					Elements bdata = baserows.get(1).getElementsByTag("td");
+					basePrice = bdata.get(1).text();
+					basePrice = basePrice.replaceAll("[^\\d.]", "");
+					if (basePrice.equals("")) basePrice = "0";
+					
+					String sql = "UPDATE narabidinfo SET 입찰분류=1, 기초금액=" + basePrice + " " + where;
+					st.executeUpdate(sql);
+					
 					for (int y = 2; y < baserows.size(); y++) {
-						data = baserows.get(y).getElementsByTag("td");
-						divnum = data.get(0).text();
-						divprice = data.get(1).text();
-						divprice = divprice.replaceAll("[^\\d.]", "");
+						Elements data = baserows.get(y).getElementsByTag("td");
+						String dnum = data.get(0).text();
+						String dprice = data.get(1).text();
+						dprice = dprice.replaceAll("[^\\d.]", "");
 
-						String temp = "CREATE TEMPORARY TABLE tmptable SELECT * FROM "+table+" " + where;
+						String temp = "CREATE TEMPORARY TABLE tmptable SELECT * FROM narabidinfo " + where;
 						st.executeUpdate(temp);
-						temp = "UPDATE tmptable SET 입찰분류="+divnum+", 기초금액="+divprice+";";
+						temp = "UPDATE tmptable SET 입찰분류="+dnum+", 기초금액="+dprice+";";
 						st.executeUpdate(temp);
-						temp = "INSERT INTO "+table+" SELECT * FROM tmptable " + where + " LIMIT 1;";
+						temp = "INSERT INTO narabidinfo SELECT * FROM tmptable " + where + " LIMIT 1;";
 						st.executeUpdate(temp);
 						temp = "DROP TEMPORARY TABLE IF EXISTS tmptable";
 						st.executeUpdate(temp);
@@ -588,7 +564,7 @@ public class NaraParser extends Parser {
 				}
 			}
 			
-			String sql = "UPDATE " + table + " SET 입찰방식=\"" + bidMethod + "\", " +
+			String sql = "UPDATE narabidinfo SET 입찰방식=\"" + bidMethod + "\", " +
 					"재입찰=\"" + rebid + "\", " +
 					"집행관=\"" + exec + "\", " +
 					"입회관=\"" + obs + "\", " +
@@ -596,18 +572,14 @@ public class NaraParser extends Parser {
 					"예정개찰일시=\"" + openDate + "\", " +
 					"예가방법=\"" + priceMethod + "\", " +
 					"업종제한사항=\"" + limit + "\", " +
-					"기초금액=" + basePrice + ", " +
 					"공고=1, " +
 					"예비가격=\"" + pricing + "\", " +
 					"난이도=\"" + level + "\" " + where;
 			st.executeUpdate(sql);
 		}
-		else if (op.equals("결과")) {
-			
-		}
 	}
 	
-	public void parseRes(Document doc, String table, String where, String bidno, String bidcate, String reno, String tid) throws SQLException, IOException {
+	public void parseRes(Document doc, String where, String bidno, String bidcate, String reno, String tid) throws SQLException, IOException {
 		Elements keys = doc.getElementsByTag("th");
 		
 		boolean hasDup = false;
@@ -644,7 +616,7 @@ public class NaraParser extends Parser {
 			}
 		}
 		
-		String sql = "UPDATE " + table + " SET 실제개찰일시=\"" + openDate + "\", " +
+		String sql = "UPDATE narabidinfo SET 실제개찰일시=\"" + openDate + "\", " +
 				"집행관=\"" + exec + "\", " +
 				"입회관=\"" + obs + "\", " +
 				"공고기관=\"" + annOrg + "\", " +
@@ -665,10 +637,10 @@ public class NaraParser extends Parser {
 			openConnection(duppath, "GET");
 			
 			Document dup = Jsoup.parse(getResponse(null, "GET"));
-			parseDup(dup, table, where);
+			parseDup(dup, where);
 		}
 		else {
-			sql = "UPDATE " + table + " SET 완료=1 " + where;
+			sql = "UPDATE narabidinfo SET 완료=1 " + where;
 			st.executeUpdate(sql);
 		}
 					
@@ -677,6 +649,15 @@ public class NaraParser extends Parser {
 				System.out.println("Has rebids");
 				reno = (Integer.parseInt(reno) - 1) + "";
 				where = "WHERE 공고번호차수 = \"" + bidno + "\" AND 재입찰번호=" + reno + " AND 입찰분류=" + bidcate;
+				
+				boolean rexists = false;
+				
+				rs = st.executeQuery("SELECT EXISTS(SELECT 공고번호차수 FROM narabidinfo " + where + ");");
+				if (rs.next()) rexists = rs.getBoolean(1);
+				
+				if (rexists) {
+					
+				}
 				
 				String itempath = "";
 				if (tid.equals("1") || tid.equals("9")) itempath = NaraParser.PROD_RES; // 물품
@@ -700,12 +681,12 @@ public class NaraParser extends Parser {
 				
 				openConnection(itempath, "GET");
 				Document resDoc = Jsoup.parse(getResponse(null, "GET"));
-				parseRes(resDoc, table, where, bidno, bidcate, reno, tid);
+				parseRes(resDoc, where, bidno, bidcate, reno, tid);
 			}
 		}
 	}
 	
-	public void parseDup(Document doc, String table, String where) throws SQLException {
+	public void parseDup(Document doc, String where) throws SQLException {
 		Elements heads = doc.getElementsByTag("th");
 		String expPrice = "0"; // 예정가격
 		
@@ -716,12 +697,12 @@ public class NaraParser extends Parser {
 				price = price.replaceAll("[^\\d.]", "");
 				String comp = h.nextElementSibling().nextElementSibling().text();
 				
-				String sql = "UPDATE " + table + " SET 복수" + ind + "=" + price + ", 복참" + ind + "=" + comp + " " + where;
+				String sql = "UPDATE narabidinfo SET 복수" + ind + "=" + price + ", 복참" + ind + "=" + comp + " " + where;
 				st.executeUpdate(sql);
 			}
 			else if (h.text().contains("작성시각")) {
 				String dupTime = h.nextElementSibling().text();
-				String sql = "UPDATE " + table + " SET 복가작성시간=\"" + dupTime + "\" " + where;
+				String sql = "UPDATE narabidinfo SET 복가작성시간=\"" + dupTime + "\" " + where;
 				st.executeUpdate(sql);
 			}
 			else if (h.text().equals("예정가격")) {
@@ -731,7 +712,7 @@ public class NaraParser extends Parser {
 			}
 		}
 		
-		String sql = "UPDATE " + table + " SET 완료=1, " + 
+		String sql = "UPDATE narabidinfo SET 완료=1, " + 
 				"예정가격=" + expPrice + " " + where;
 		st.executeUpdate(sql);
 	}

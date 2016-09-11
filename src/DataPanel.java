@@ -15,6 +15,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -29,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.border.BevelBorder;
@@ -137,7 +140,8 @@ public class DataPanel extends JPanel {
 		private class SearchOptionPanel extends JPanel {
 			
 			JComboBox workDrop;
-			JTextArea orgInput;
+			JTextField orgInput;
+			JButton orgSearch;
 			JCheckBox dateCheck;
 			DatePicker startDate;
 			DatePicker endDate;
@@ -147,7 +151,9 @@ public class DataPanel extends JPanel {
 			public SearchOptionPanel() {
 				super();
 				workDrop = new JComboBox(Resources.NARA_WORKS);
-				orgInput = new JTextArea(1, 15);
+				orgInput = new JTextField(15);
+				orgSearch = new JButton("검색");
+				orgSearch.addActionListener(new OrgListener());
 				dateCheck = new JCheckBox();
 				startDate = new JDatePicker(Calendar.getInstance().getTime());
 				startDate.setTextEditable(true);
@@ -165,6 +171,7 @@ public class DataPanel extends JPanel {
 				o.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 				this.add(o);
 				this.add(orgInput);
+				this.add(orgSearch);
 				JLabel d = new JLabel("개찰일시 ");
 				d.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 				this.add(d);
@@ -193,6 +200,18 @@ public class DataPanel extends JPanel {
 				else if (site.equals("도로공사")) {
 					DefaultComboBoxModel model = new DefaultComboBoxModel(Resources.EX_WORKS);
 					workDrop.setModel(model);
+				}
+			}
+			
+			private class OrgListener implements ActionListener {
+				public void actionPerformed(ActionEvent e) {
+					String site = siteDrop.getSelectedItem().toString();
+					try {
+						OrgFrame o = new OrgFrame(orgInput, site, false);
+					} catch (ClassNotFoundException | SQLException e1) {
+						Logger.getGlobal().log(Level.WARNING, e1.getMessage(), e1);
+						e1.printStackTrace();
+					}
 				}
 			}
 			
@@ -232,70 +251,48 @@ public class DataPanel extends JPanel {
 						st = con.createStatement();
 						rs = null;
 						
-						if (site.equals("나라장터")) {
-							if (workType.equals("공사")) tableName = "narafacilinfo";
-							else if (workType.equals("용역")) tableName = "naraservinfo";
-							else if (workType.equals("물품")) tableName = "naraprodinfo";
-							else tableName = "nararestinfo";
-						}
+						if (site.equals("나라장터")) tableName = "narabidinfo";
 						else if (site.equals("LH공사")) tableName = "lhbidinfo";
 						else if (site.equals("국방조달청")) tableName = "dapabidinfo";
 						else if (site.equals("한국마사회")) tableName = "letsrunbidinfo";
 						else if (site.equals("도로공사")) tableName = "exbidinfo";
 						
 						String sql = "";
-						if (!(workType.equals("전체") && site.equals("나라장터"))) {
-							sql = "SELECT * FROM " + tableName + " WHERE ";
-							if (!org.equals("")) {
-								if (site.equals("나라장터")) sql += "수요기관=\"" + org + "\" AND ";
-								else if (site.equals("LH공사")) sql += "지역본부=\"" + org + "\" AND ";
-								else if (site.equals("국방조달청")) sql += "발주기관=\"" + org + "\" AND ";
-								else if (site.equals("도로공사")) sql += "지역=\"" + org + "\" AND ";
-								else if (site.equals("한국마사회")) sql += "사업장=\"" + org + "\" AND ";
-							}
-							if (dateCheck.isSelected()) {
-								if (site.equals("나라장터")) sql += "예정개찰일시 >= \"" + sd + "\" AND 예정개찰일시 <= \"" + ed + "\" AND ";
-								else sql += "개찰일시 >= \"" + sd + "\" AND 개찰일시 <= \"" + ed + "\" AND ";
-							}
-							if (!site.equals("국방조달청") && !site.equals("나라장터") && !workType.equals("전체")) {
-								if (site.equals("LH공사")) sql += "업무=\"" + workType + "\" AND ";
-								else if (site.equals("도로공사")) sql += "분류=\"" + workType + "\" AND ";
-								else if (site.equals("한국마사회")) sql += "입찰구분=\"" + workType + "\" AND ";
-							}
-							sql += "완료 > 0 ";
-							
-							// Add unopened notis
-							sql += "UNION SELECT * FROM " + tableName + " WHERE ";
-							if (!org.equals("")) {
-								if (site.equals("나라장터")) sql += "수요기관=\"" + org + "\" AND ";
-								else if (site.equals("LH공사")) sql += "지역본부=\"" + org + "\" AND ";
-								else if (site.equals("국방조달청")) sql += "발주기관=\"" + org + "\" AND ";
-								else if (site.equals("도로공사")) sql += "지역=\"" + org + "\" AND ";
-								else if (site.equals("한국마사회")) sql += "사업장=\"" + org + "\" AND ";
-							}
-							if (!site.equals("국방조달청") && !site.equals("나라장터") && !workType.equals("전체")) {
-								if (site.equals("LH공사")) sql += "업무=\"" + workType + "\" AND ";
-								else if (site.equals("도로공사")) sql += "분류=\"" + workType + "\" AND ";
-								else if (site.equals("한국마사회")) sql += "입찰구분=\"" + workType + "\" AND ";
-							}
-							if (site.equals("나라장터")) sql += "예정개찰일시 >= \"" + today + "\" ORDER BY 예정개찰일시, 공고번호차수";
-							else sql += "개찰일시 >= \"" + today + "\" ORDER BY 개찰일시, 공고번호";
+						sql = "SELECT * FROM " + tableName + " WHERE ";
+						if (!org.equals("")) {
+							if (site.equals("나라장터")) sql += "수요기관=\"" + org + "\" AND ";
+							else if (site.equals("LH공사")) sql += "지역본부=\"" + org + "\" AND ";
+							else if (site.equals("국방조달청")) sql += "발주기관=\"" + org + "\" AND ";
+							else if (site.equals("도로공사")) sql += "지역=\"" + org + "\" AND ";
+							else if (site.equals("한국마사회")) sql += "사업장=\"" + org + "\" AND ";
 						}
-						else {
-							String[] tables = { "narafacilinfo", "naraprodinfo", "naraservinfo", "nararestinfo" };
-							for (String t : tables) {
-								if (!t.equals("narafacilinfo")) sql += "UNION ";
-								sql += "SELECT * FROM " + t + " WHERE ";
-								if (!org.equals("")) sql += "수요기관=\"" + org + "\" AND ";
-								if (dateCheck.isSelected()) sql += "예정개찰일시 >= \"" + sd + "\" AND 예정개찰일시 <= \"" + ed + "\" AND ";
-								sql += "완료 > 0 ";
-								
-								sql += "UNION SELECT * FROM " + t + " WHERE ";
-								if (!org.equals("")) sql += "수요기관=\"" + org + "\" AND ";
-								sql += "예정개찰일시 >= \"" + today + "\" ";
-							}
-							sql += "ORDER BY 예정개찰일시, 공고번호차수";
+						if (dateCheck.isSelected()) {
+							if (site.equals("나라장터")) sql += "예정개찰일시 >= \"" + sd + "\" AND 예정개찰일시 <= \"" + ed + "\" AND ";
+							else sql += "개찰일시 >= \"" + sd + "\" AND 개찰일시 <= \"" + ed + "\" AND ";
 						}
+						if (!site.equals("국방조달청") && !workType.equals("전체")) {
+							if (site.equals("LH공사") || site.equals("나라장터")) sql += "업무=\"" + workType + "\" AND ";
+							else if (site.equals("도로공사")) sql += "분류=\"" + workType + "\" AND ";
+							else if (site.equals("한국마사회")) sql += "입찰구분=\"" + workType + "\" AND ";
+						}
+						sql += "완료 > 0 ";
+						
+						// Add unopened notis
+						sql += "UNION SELECT * FROM " + tableName + " WHERE ";
+						if (!org.equals("")) {
+							if (site.equals("나라장터")) sql += "수요기관=\"" + org + "\" AND ";
+							else if (site.equals("LH공사")) sql += "지역본부=\"" + org + "\" AND ";
+							else if (site.equals("국방조달청")) sql += "발주기관=\"" + org + "\" AND ";
+							else if (site.equals("도로공사")) sql += "지역=\"" + org + "\" AND ";
+							else if (site.equals("한국마사회")) sql += "사업장=\"" + org + "\" AND ";
+						}
+						if (!site.equals("국방조달청") && !workType.equals("전체")) {
+							if (site.equals("LH공사") || site.equals("나라장터")) sql += "업무=\"" + workType + "\" AND ";
+							else if (site.equals("도로공사")) sql += "분류=\"" + workType + "\" AND ";
+							else if (site.equals("한국마사회")) sql += "입찰구분=\"" + workType + "\" AND ";
+						}
+						if (site.equals("나라장터")) sql += "예정개찰일시 >= \"" + today + "\" ORDER BY 예정개찰일시, 공고번호차수";
+						else sql += "개찰일시 >= \"" + today + "\" ORDER BY 개찰일시, 공고번호";
 						
 						System.out.println(sql);
 						rs = st.executeQuery(sql);

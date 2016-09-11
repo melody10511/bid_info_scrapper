@@ -211,21 +211,9 @@ public class MonthCheckFrame extends JFrame {
 							String em = sdf.format(sc.getTime());
 							parser.setDate(sm, em);
 							
-							rs = st.executeQuery("SELECT COUNT(*) FROM naraprodinfo WHERE 예정개찰일시 BETWEEN \""+sm+" 00:00:00\" AND \""+em+" 23:59:59\" AND 목록=1;");
+							rs = st.executeQuery("SELECT COUNT(*) FROM narabidinfo WHERE 예정개찰일시 BETWEEN \""+sm+" 00:00:00\" AND \""+em+" 23:59:59\" AND 목록=1;");
 							if (rs.next()) {
 								dbcount = rs.getInt(1);
-							}
-							rs = st.executeQuery("SELECT COUNT(*) FROM narafacilinfo WHERE 예정개찰일시 BETWEEN \""+sm+" 00:00:00\" AND \""+em+" 23:59:59\" AND 목록=1;");
-							if (rs.next()) {
-								dbcount += rs.getInt(1);
-							}
-							rs = st.executeQuery("SELECT COUNT(*) FROM naraservinfo WHERE 예정개찰일시 BETWEEN \""+sm+" 00:00:00\" AND \""+em+" 23:59:59\" AND 목록=1;");
-							if (rs.next()) {
-								dbcount += rs.getInt(1);
-							}
-							rs = st.executeQuery("SELECT COUNT(*) FROM nararestinfo WHERE 예정개찰일시 BETWEEN \""+sm+" 00:00:00\" AND \""+em+" 23:59:59\" AND 목록=1;");
-							if (rs.next()) {
-								dbcount += rs.getInt(1);
 							}
 							
 							svcount = parser.getTotal();
