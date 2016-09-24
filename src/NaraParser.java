@@ -67,7 +67,7 @@ public class NaraParser extends Parser {
 	}
 	
 	public static void main(String[] args) throws ClassNotFoundException, SQLException, IOException {
-		NaraParser tester = new NaraParser("2016/08/30", "2016/08/30", "공고");
+		NaraParser tester = new NaraParser("2016/09/02", "2016/09/02", "공고");
 		
 		tester.getList();
 		tester.setOption("결과");
@@ -180,6 +180,10 @@ public class NaraParser extends Parser {
 			String annOrg = data.get(4).text(); // 공고기관
 			String demOrg = data.get(5).text(); // 수요기관
 			String compType = data.get(6).text(); // 계약방법
+			
+			if (workType.equals("기타") || bidno.length() != 14 || !Resources.isInteger(bidno.substring(0, 4))) {
+				return;
+			}
 			
 			String where = "WHERE 공고번호차수=\"" + bidno + "\"";
 			
@@ -568,14 +572,16 @@ public class NaraParser extends Parser {
 					"재입찰=\"" + rebid + "\", " +
 					"집행관=\"" + exec + "\", " +
 					"입회관=\"" + obs + "\", " +
-					"실제개찰일시=\"" + openDate + "\", " +
-					"예정개찰일시=\"" + openDate + "\", " +
 					"예가방법=\"" + priceMethod + "\", " +
 					"업종제한사항=\"" + limit + "\", " +
 					"공고=1, " +
 					"예비가격=\"" + pricing + "\", " +
 					"난이도=\"" + level + "\" " + where;
 			st.executeUpdate(sql);
+			if (!openDate.equals("")) {
+				sql = "UPDATE narabidinfo SET 실제개찰일시=\"" + openDate + "\", 예정개찰일시=\"" + openDate + "\" " + where;
+				st.executeUpdate(sql);
+			}
 		}
 	}
 	
@@ -726,7 +732,7 @@ public class NaraParser extends Parser {
 			getList();
 		} catch (IOException | SQLException e) {
 			e.printStackTrace();
-		}		
+		}
 	}
 
 	public int getTotal() throws IOException {

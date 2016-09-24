@@ -465,6 +465,7 @@ public class DataPanel extends JPanel {
 						else ew.setOptions(null, null, org, null, workType);
 						ew.toExcel();
 					} catch (Exception ex) {
+						Logger.getGlobal().log(Level.WARNING, ex.getMessage(), ex);
 						ex.printStackTrace();
 					}
 				}

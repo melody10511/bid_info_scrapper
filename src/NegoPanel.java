@@ -14,6 +14,8 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -27,6 +29,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -50,7 +53,8 @@ public class NegoPanel extends JPanel {
 		
 		JPanel bottomPanel;
 		JComboBox workDrop;
-		JTextArea orgInput;
+		JTextField orgInput;
+		JButton orgSearch;
 		JCheckBox dateCheck;
 		DatePicker startDate;
 		DatePicker endDate;
@@ -107,7 +111,19 @@ public class NegoPanel extends JPanel {
 			
 			bottomPanel = new JPanel();
 			workDrop = new JComboBox(Resources.NARA_WORKS);
-			orgInput = new JTextArea(1, 15);
+			orgInput = new JTextField(15);
+			orgSearch = new JButton("검색");
+			orgSearch.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					String site = siteDrop.getSelectedItem().toString();
+					try {
+						OrgFrame o = new OrgFrame(orgInput, site, false);
+					} catch (ClassNotFoundException | SQLException e1) {
+						Logger.getGlobal().log(Level.WARNING, e1.getMessage(), e1);
+						e1.printStackTrace();
+					}
+				}
+			});
 			dateCheck = new JCheckBox();
 			startDate = new JDatePicker(Calendar.getInstance().getTime());
 			startDate.setTextEditable(true);
@@ -123,6 +139,7 @@ public class NegoPanel extends JPanel {
 			o.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 			bottomPanel.add(o);
 			bottomPanel.add(orgInput);
+			bottomPanel.add(orgSearch);
 			JLabel d = new JLabel("개찰일시 ");
 			d.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 			bottomPanel.add(d);
