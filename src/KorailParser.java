@@ -235,7 +235,7 @@ public class KorailParser extends Parser {
 			
 			if (enter) {
 				String link = data.get(0).getElementsByTag("a").first().attr("href");
-				getItem(link);
+				getItem(link, where);
 			}
 		}
 		else if (it.equals("결과")) {
@@ -276,12 +276,12 @@ public class KorailParser extends Parser {
 			
 			if (enter) {
 				String link = data.get(0).getElementsByTag("a").first().attr("href");
-				getItem(link);
+				getItem(link, where);
 			}
 		}
 	}
 	
-	public void getItem(String link) throws IOException {
+	public void getItem(String link, String where) throws IOException, SQLException {
 		Document framePage = Jsoup.parse(httpsConnection(link));
 		String tableLink = framePage.getElementsByTag("frame").first().attr("src");
 		String frameLink = "";
@@ -294,7 +294,141 @@ public class KorailParser extends Parser {
 		
 		driver.get(frameLink);
 		Document doc = Jsoup.parse(driver.getPageSource());
-		System.out.println(doc.html());
+		if (it.equals("공고")) parseNoti(doc, where);
+		else parseRes(doc, where);
+	}
+	
+	public void parseNoti(Document doc, String where) throws SQLException {
+		Elements heads = doc.getElementsByTag("th");
+		
+		String workType = ""; // 공고구분
+		String compType = ""; // 계약방법
+		String hasRe = ""; // 재입찰 허용여부
+		String openDate = ""; // 개찰일시
+		String priceMethod = ""; // 예가방식
+		String totalPrice = ""; // 총예가갯수
+		String range = ""; // 예가범위
+		String basePrice = ""; // 기초금액
+		
+		for (Element h : heads) {
+			String key = h.text();
+			if (key.equals("공고구분")) {
+				workType = h.nextElementSibling().text();
+			}
+			else if (key.equals("계약방법")) {
+				compType = h.nextElementSibling().text();
+			}
+			else if (key.equals("재입찰 허용여부")) {
+				hasRe = h.nextElementSibling().text();
+			}
+			else if (key.equals("개찰일자")) {
+				openDate = h.nextElementSibling().text();
+			}
+			else if (key.equals("예가방식")) {
+				priceMethod = h.nextElementSibling().text();
+			}
+			else if (key.equals("총예가갯수")) {
+				totalPrice = h.nextElementSibling().text();
+			}
+			else if (key.equals("예가범위")) {
+				range = h.nextElementSibling().text();
+			}
+			else if (key.equals("예가기초금액")) {
+				basePrice = h.nextElementSibling().text();
+			}
+		}
+		
+		String sql = "UPDATE korailbidinfo SET 공고구분=\""+workType+"\", " +
+				"계약방법=\""+compType+"\", " +
+				"재입찰허용여부=\""+hasRe+"\", " +
+				"개찰일시="+openDate+", " +
+				"예가방식=\""+priceMethod+"\", " +
+				"총예가갯수="+totalPrice+", " +
+				"예가범위=\""+range+"\", " +
+				"기초금액="+basePrice+" " + where;
+		st.executeUpdate(sql);
+	}
+	
+	public void parseRes(Document doc, String where) throws SQLException {
+		Elements heads = doc.getElementsByTag("td");
+		
+		String compType = ""; // 계약방법
+		String openDate = ""; // 개찰일시
+		String basePrice = ""; // 기초금액
+		String expPrice = ""; // 예정가격
+		String comp = ""; // 참가수
+		String result = ""; // 개찰결과
+		String bidPrice = ""; // 투찰금액
+		
+		for (Element h : heads) {
+			String key = h.text();
+			if (key.equals("계약방법")) {
+				compType = h.nextElementSibling().text();
+			}
+			else if (key.equals("개찰일시")) {
+				openDate = h.nextElementSibling().text();
+			}
+			else if (key.equals("기초(예가)금액")) {
+				basePrice = h.nextElementSibling().text();
+			}
+			else if (key.equals("예정가격")) {
+				expPrice = h.nextElementSibling().text();
+			}
+			else if (key.equals("입찰업체수")) {
+				comp = h.nextElementSibling().text();
+			}
+			else if (key.equals("개찰결과")) {
+				result = h.nextElementSibling().text();
+			}
+		}
+		
+		Element priceTable = doc.getElementById("pre_price-tbd");
+		if (priceTable != null) {
+			Elements rows = priceTable.getElementsByTag("tr");
+			int ind = 1;
+			for (int i = 1; i <= 5; i += 2) {
+				Elements data = rows.get(i).getElementsByTag("td");
+				
+				for (int j = 1; j <= 14; j += 2) {
+					String price = data.get(j).text();
+					String dup = data.get(j + 1).text();
+					
+					String s = "UPDATE korailbidinfo SET 복수" + ind + "=" + price + ", 복참" + ind + "=" + dup + " " + where;
+        			st.executeUpdate(s);
+        			ind++;
+				}
+	 		}
+		}
+		
+		Element chosenTable = doc.getElementById("sel_pre_price-bd-scroll");
+		if (chosenTable != null) {
+			Element row = chosenTable.getElementsByTag("tr").get(1);
+			
+			Elements data = row.getElementsByTag("td");
+			
+			int ind = 1;
+			for (int i = 1; i <= 10; i += 3) {
+				String price = data.get(i).text();
+				String s = "UPDATE korailbidinfo SET 선택" + ind + "=" + price + " " + where;
+				st.executeUpdate(s);
+				ind++;
+			}
+		}
+		
+		Element detailTable = doc.getElementById("gen_fact_2-bd-scroll");
+		if (detailTable != null) {
+			Element row = detailTable.getElementsByTag("tr").get(2);
+			bidPrice = row.getElementsByTag("td").get(4).text();
+		}
+		
+		String sql = "UPDATE korailbidinfo SET 계약방법=\""+compType+"\", " +
+				"개찰일시=\""+openDate+"\", " +
+				"개찰결과=\""+result+"\", " +
+				"참가수="+comp+", " +
+				"투찰금액="+bidPrice+", " +
+				"예정가격="+expPrice+", " +
+				"기초금액="+basePrice+" " + where;
+		st.executeUpdate(sql);
 	}
 	
 	public void run() {
